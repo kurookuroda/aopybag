@@ -30,10 +30,10 @@ FILE_PATH = f"{ASSETS_DIR}/aozora_416.txt"
 
 # サウンドファイルのパス（wav / ogg 推奨。mp3 は pygame によっては遅延あり）
 SOUND_CONFIG = {
-    'talk':       f"{ASSETS_DIR}/beep_talk.wav",
-    'talk_space': f"{ASSETS_DIR}/beep_space.wav",
-    'talk_fast':  f"{ASSETS_DIR}/beep_fast.wav",
-    'talk_faster':f"{ASSETS_DIR}/beep_faster.wav",
+    'talk':       f"{ASSETS_DIR}/beep_talk.ogg",
+    'talk_space': f"{ASSETS_DIR}/beep_space.ogg",
+    'talk_fast':  f"{ASSETS_DIR}/beep_fast.ogg",
+    'talk_faster':f"{ASSETS_DIR}/beep_faster.ogg",
 }
 
 # Pyxel デフォルト16色パレット (PICO-8)

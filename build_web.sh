@@ -5,10 +5,11 @@
 
 set -e
 
-ASSETS="assets/PixelMplus10-Regular.ttf,assets/PixelMplus12-Regular.ttf,assets/aozora_416.txt,assets/beep_talk.wav,assets/beep_space.wav,assets/beep_fast.wav,assets/beep_faster.wav"
+#ASSETS="assets/PixelMplus10-Regular.ttf,assets/PixelMplus12-Regular.ttf,assets/aozora_416.txt,assets/beep_talk.wav,assets/beep_space.wav,assets/beep_fast.wav,assets/beep_faster.wav"
 
 echo "=== pygbag ビルド開始 ==="
-pygbag --assets "$ASSETS" main.py
+#pygbag --assets "$ASSETS" main.py
+python3 -m pygbag .
 
 echo "=== ビルド完了 ==="
 echo "出力先: build/web/"
