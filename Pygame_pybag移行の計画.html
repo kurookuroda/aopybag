@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pyxel → Pygame → pygbag 移植計画書</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface-2: #1c2128;
+  --ink: #c9d1d9;
+  --ink-dim: #8b949e;
+  --accent: #58a6ff;
+  --accent-weak: rgba(88, 166, 255, 0.08);
+  --warn: #d29922;
+  --danger: #f85149;
+  --success: #3fb950;
+  --line: rgba(139, 148, 158, 0.15);
+  --space: clamp(1rem, 0.8rem + 1vw, 1.5rem);
+  --step-0: clamp(0.95rem, 0.92rem + 0.2vw, 1.05rem);
+  --step-1: clamp(1.1rem, 1.0rem + 0.5vw, 1.35rem);
+  --step-2: clamp(1.5rem, 1.2rem + 1.2vw, 2.2rem);
+  --step-3: clamp(2rem, 1.5rem + 2.0vw, 3rem);
+  --radius: 10px;
+}
+
+* { box-sizing: border-box; margin: 0; }
+
+body {
+  font-family: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: var(--step-0);
+  line-height: 1.85;
+}
+
+header {
+  border-bottom: 1px solid var(--line);
+  padding: calc(var(--space) * 2) var(--space);
+  background: var(--surface);
+}
+
+.header-inner {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+header h1 {
+  font-size: var(--step-3);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+}
+
+header .subtitle {
+  color: var(--ink-dim);
+  font-size: var(--step-0);
+}
+
+.badge-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: var(--accent-weak);
+  color: var(--accent);
+  border: 1px solid rgba(88,166,255,0.2);
+}
+
+main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--space);
+}
+
+section {
+  margin-bottom: calc(var(--space) * 2.5);
+}
+
+h2 {
+  font-size: var(--step-2);
+  font-weight: 700;
+  margin-bottom: 1rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+h2 .num {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.65em;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+h3 {
+  font-size: var(--step-1);
+  font-weight: 700;
+  margin: 1.5rem 0 0.6rem;
+  color: var(--ink);
+}
+
+p { margin-bottom: 0.8rem; }
+
+.flow-diagram {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 1.2rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin: 1rem 0 1.5rem;
+}
+
+.flow-box {
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius);
+  font-weight: 700;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.flow-box.source {
+  background: rgba(210, 153, 34, 0.12);
+  color: var(--warn);
+  border: 1px solid rgba(210, 153, 34, 0.25);
+}
+
+.flow-box.target {
+  background: rgba(63, 185, 80, 0.12);
+  color: var(--success);
+  border: 1px solid rgba(63, 185, 80, 0.25);
+}
+
+.flow-arrow {
+  color: var(--ink-dim);
+  font-size: 1.3rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.92rem;
+}
+
+th, td {
+  padding: 0.65rem 0.8rem;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+th {
+  background: var(--surface-2);
+  color: var(--ink-dim);
+  font-weight: 500;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+tr:hover td {
+  background: rgba(255,255,255,0.02);
+}
+
+code, .code {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.85em;
+  background: var(--surface-2);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  color: var(--accent);
+}
+
+pre {
+  background: var(--surface-2);
+  padding: 1rem;
+  border-radius: var(--radius);
+  overflow-x: auto;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  margin: 0.8rem 0;
+  border: 1px solid var(--line);
+}
+
+.phase-grid {
+  display: grid;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.phase-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.2rem;
+}
+
+.phase-card .phase-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.phase-card .phase-title .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.phase-card ul {
+  margin: 0.5rem 0 0 1.2rem;
+  padding: 0;
+}
+
+.phase-card li {
+  margin-bottom: 0.35rem;
+  color: var(--ink-dim);
+}
+
+.note {
+  background: var(--accent-weak);
+  border-left: 3px solid var(--accent);
+  padding: 0.8rem 1rem;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  margin: 1rem 0;
+  font-size: 0.92rem;
+}
+
+.warn-box {
+  background: rgba(210, 153, 34, 0.08);
+  border-left: 3px solid var(--warn);
+  padding: 0.8rem 1rem;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  margin: 1rem 0;
+  font-size: 0.92rem;
+}
+
+.danger-box {
+  background: rgba(248, 81, 73, 0.08);
+  border-left: 3px solid var(--danger);
+  padding: 0.8rem 1rem;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  margin: 1rem 0;
+  font-size: 0.92rem;
+}
+
+.success-box {
+  background: rgba(63, 185, 80, 0.08);
+  border-left: 3px solid var(--success);
+  padding: 0.8rem 1rem;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  margin: 1rem 0;
+  font-size: 0.92rem;
+}
+
+.checklist {
+  list-style: none;
+  padding: 0;
+  margin: 0.8rem 0;
+}
+
+.checklist li {
+  padding-left: 1.5rem;
+  position: relative;
+  margin-bottom: 0.4rem;
+}
+
+.checklist li::before {
+  content: "☐";
+  position: absolute;
+  left: 0;
+  color: var(--ink-dim);
+}
+
+@media print {
+  body { background: #fff; color: #222; }
+  .badge, .flow-box { border-width: 1px !important; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <h1>Pyxel → Pygame → pygbag 移植計画書</h1>
+    <p class="subtitle">Aozora Reader の実行環境をブラウザへ移行するための段階的計画</p>
+    <div class="badge-row">
+      <span class="badge">Python</span>
+      <span class="badge">Pygame</span>
+      <span class="badge">pygbag</span>
+      <span class="badge">WebAssembly</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="num">01</span> 移植の全体像</h2>
+  <p>現在 Pyxel で動作しているテキストリーダーを、Pygame へ移植したうえで pygbag を使ってブラウザ（WebAssembly）環境で動作させる。移植は「Pyxel → Pygame → pygbag 対応」の3段階で進める。</p>
+
+  <div class="flow-diagram">
+    <div class="flow-box source">Pyxel版</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box target">Pygame版</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box target">pygbag版（ブラウザ）</div>
+  </div>
+
+  <div class="note">
+    <strong>方針：</strong> まず Pygame 版をローカルで完全に動作させ、その後 pygbag 対応を行う。同時並行ではなく、段階的に検証する。
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">02</span> 現状コードの構成分析</h2>
+  <p>移植対象となる機能をカテゴリごとに整理する。</p>
+
+  <table>
+    <thead>
+      <tr><th>カテゴリ</th><th>Pyxel API</th><th>用途</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>ウィンドウ</td><td><code>pyxel.init()</code></td><td>256×256 画面の初期化</td></tr>
+      <tr><td>描画</td><td><code>cls, rect, rectb, text</code></td><td>背景クリア、枠線、文字描画</td></tr>
+      <tr><td>フォント</td><td><code>pyxel.Font(path, size)</code></td><td>PixelMplus フォントの読み込み</td></tr>
+      <tr><td>入力（キー）</td><td><code>btn, btnp, KEY_*</code></td><td>Z/X/Enter/Space/矢印など</td></tr>
+      <tr><td>入力（マウス）</td><td><code>MOUSE_BUTTON_LEFT</code></td><td>左クリックでページ送り</td></tr>
+      <tr><td>入力（パッド）</td><td><code>GAMEPAD1_*</code></td><td>ゲームパッド操作</td></tr>
+      <tr><td>サウンド</td><td><code>Sound, play</code></td><td>タイピング音（4種類）</td></tr>
+      <tr><td>テキスト処理</td><td><code>wrap_paragraphs, paginate</code></td><td>折り返し・ページ分割</td></tr>
+      <tr><td>メインループ</td><td><code>pyxel.run(update, draw)</code></td><td>ゲームループの自動実行</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">03</span> Pygame 版への移植方針</h2>
+
+  <h3>3-1. ウィンドウ・描画系</h3>
+  <table>
+    <thead>
+      <tr><th>Pyxel</th><th>Pygame</th><th>備考</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>pyxel.init(w, h)</code></td><td><code>pygame.display.set_mode((w,h))</code></td><td>同じ 256×256 でOK</td></tr>
+      <tr><td><code>cls(color)</code></td><td><code>screen.fill(palette[color])</code></td><td>Pyxel 色番号 → RGB 変換テーブルが必要</td></tr>
+      <tr><td><code>rect(x,y,w,h,c)</code></td><td><code>pygame.draw.rect(screen, color, rect)</code></td><td>塗りつぶし矩形</td></tr>
+      <tr><td><code>rectb(x,y,w,h,c)</code></td><td><code>pygame.draw.rect(..., width=1)</code></td><td>枠線矩形</td></tr>
+      <tr><td><code>text(x,y,s,c,font=)</code></td><td><code>font.render(s, True, color)</code> + blit</td><td>日本語フォントを指定</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3-2. 入力系</h3>
+  <table>
+    <thead>
+      <tr><th>Pyxel</th><th>Pygame</th><th>備考</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>btn(KEY)</code></td><td><code>pygame.key.get_pressed()[K]</code></td><td>押下中判定</td></tr>
+      <tr><td><code>btnp(KEY)</code></td><td><code>btn</code> + 前フレーム状態比較</td><td>自前でトリガー管理が必要</td></tr>
+      <tr><td><code>MOUSE_BUTTON_LEFT</code></td><td><code>pygame.mouse.get_pressed()[0]</code></td><td>左クリック</td></tr>
+      <tr><td><code>GAMEPAD1_*</code></td><td><code>pygame.joystick</code></td><td>ジョイスティックモジュールで代替</td></tr>
+    </tbody>
+  </table>
+
+  <div class="warn-box">
+    <strong>注意：</strong> Pyxel の <code>btnp</code>（1回だけ検出）は Pygame に直接相当する関数がない。前フレームのキー状態を保持して、<code>not prev and curr</code> で判定する簡易トリガー管理クラスを自作する必要がある。
+  </div>
+
+  <h3>3-3. フォント系</h3>
+  <table>
+    <thead>
+      <tr><th>Pyxel</th><th>Pygame</th><th>備考</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>pyxel.Font(path, size)</code></td><td><code>pygame.font.Font(path, size)</code></td><td>API がほぼ一致</td></tr>
+      <tr><td><code>font.text_width(s)</code></td><td><code>font.size(s)[0]</code></td><td>文字列幅の取得</td></tr>
+      <tr><td><code>pyxel.FONT_WIDTH</code></td><td><code>font.size("あ")[0]</code></td><td>固定幅フォントなら等価</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3-4. サウンド系</h3>
+  <table>
+    <thead>
+      <tr><th>Pyxel</th><th>Pygame</th><th>備考</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>pyxel.Sound()</code></td><td><code>pygame.mixer.Sound(buffer)</code></td><td>Pyxel のノート記法は自前で変換</td></tr>
+      <tr><td><code>pyxel.play(ch, snd)</code></td><td><code>sound.play()</code></td><td>チャンネル概念は mixer 側で管理</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    Pyxel の <code>set("c3", "n", "2", "n", 1)</code> のようなノート指定は Pygame にはない。短いビープ音を生成する簡易ジェネレータを自作するか、あらかじめ WAV ファイルを用意して読み込む方式に切り替えるのが現実的。
+  </div>
+
+  <h3>3-5. メインループ</h3>
+  <p>Pyxel の <code>pyxel.run(update, draw)</code> はフレームレート制御付きのゲームループを自動で実行する。Pygame 版では自前で以下のループを実装する。</p>
+  <pre>clock = pygame.time.Clock()
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+    update()
+    draw()
+    pygame.display.flip()
+    clock.tick(60)</pre>
+</section>
+
+<section>
+  <h2><span class="num">04</span> pygbag 対応ポイント</h2>
+
+  <h3>4-1. メインループを async にする</h3>
+  <p>pygbag ではメインループを <code>asyncio</code> ベースに書き換える必要がある。<code>pygame.run</code> の代わりに以下の構造にする。</p>
+  <pre>import asyncio
+
+async def main():
+    # 初期化
+    while True:
+        for event in pygame.event.get():
+            ...
+        update()
+        draw()
+        pygame.display.flip()
+        await asyncio.sleep(0)  # 必須
+
+asyncio.run(main())</pre>
+
+  <div class="danger-box">
+    <strong>重要：</strong> <code>await asyncio.sleep(0)</code> をループ内に入れないとブラウザがフリーズする。これは pygbag の鉄則。
+  </div>
+
+  <h3>4-2. アセットの読み込み方法</h3>
+  <p>pygbag ではファイルシステムへの直接アクセスが制限される。フォントファイルやテキストファイルは以下のいずれかの方法でう。</p>
+  <ul>
+    <li><strong>方法A：</strong> ビルド時に <code>--assets</code> オプションでファイルを同梱し、実行時は <code>pyodide.http</code> または <code>pygbag</code> のプリロード機構で読み込む</li>
+    <li><strong>方法B：</strong> フォントとテキストを Python コード内に Base64 埋め込みして実行時に一時ファイルとして書き出す</li>
+    <li><strong>方法C：</strong> フォントをシステムフォントに置き換え、テキストはサンプルテキストをコード内に持つ（デモ用途）</li>
+  </ul>
+
+  <h3>4-3. サウンドの扱い</h3>
+  <p>pygbag 環境では pygame.mixer の挙動に制限が出ることがある。対応方針は以下の通り。</p>
+  <ul>
+    <li>タイピング音は「あれば再生、なければ無音」のフォールバック設計にする</li>
+    <li>ビープ音生成は <code>pygame.sndarray</code> で numpy 配列から作成する方式が安定しやすい</li>
+    <li>サウンド周りのコードは <code>try/except</code> で囲み、失敗してもゲームが止まらないようにする</li>
+  </ul>
+
+  <h3>4-4. ビルドと配布</h3>
+  <pre>pip install pygbag
+pygbag --assets PixelMplus10-Regular.ttf,PixelMplus12-Regular.ttf,aozora_416.txt main.py</pre>
+  <p>ビルド後、<code>build/web/</code> 以下に出力されるファイル群を静的ホスティング（GitHub Pages など）に置くと、URL からブラウザで実行できる。</p>
+</section>
+
+<section>
+  <h2><span class="num">05</span> 実装フェーズ</h2>
+
+  <div class="phase-grid">
+    <div class="phase-card">
+      <div class="phase-title">
+        <span class="dot" style="background:var(--warn)"></span>
+        フェーズ1：Pygame 移植（ローカル動作）
+      </div>
+      <ul>
+        <li>Pygame 版のスケルトンを作成（init → run ループ）</li>
+        <li>色番号 → RGB 変換テーブルを作成</li>
+        <li><code>btn/btnp</code> 互換の入力管理クラスを実装</li>
+        <li>フォント読み込みと <code>text_width</code> 互換メソッドを実装</li>
+        <li>rect / rectb / text 描画を Pygame 版に置き換え</li>
+        <li>サウンドは一旦無効化 or 簡易ビープで代替</li>
+        <li>ローカルで動作確認（キー・マウス・ページ送り）</li>
+      </ul>
+    </div>
+
+    <div class="phase-card">
+      <div class="phase-title">
+        <span class="dot" style="background:var(--accent)"></span>
+        フェーズ2：機能完全移植
+      </div>
+      <ul>
+        <li>タイピング音を pygame.mixer で再現</li>
+        <li>ゲームパッド入力（joystick）を実装</li>
+        <li>フォントサイズ切り替え（Fキー/Xボタン）を確認</li>
+        <li>高速表示コンボ（↓+Z / ↓+X）を確認</li>
+        <li>スキップ・戻る・リセット操作を全確認</li>
+        <li>UI（ページ数・フォントサイズ表示）を確認</li>
+      </ul>
+    </div>
+
+    <div class="phase-card">
+      <div class="phase-title">
+        <span class="dot" style="background:var(--success)"></span>
+        フェーズ3：pygbag 対応
+      </div>
+      <ul>
+        <li>メインループを <code>async</code> 化</li>
+        <li>アセット読み込みを pygbag 方式に変更</li>
+        <li>フォントファイルの同梱とプリロード確認</li>
+        <li>テキストファイル（青空文庫）の読み込み確認</li>
+        <li>ブラウザでのキー入力・マウス入力確認</li>
+        <li>ビルド → ローカルサーバ → ブラウザで検証</li>
+        <li>GitHub Pages などにデプロイ</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span> リスクと対策</h2>
+
+  <table>
+    <thead>
+      <tr><th>リスク</th><th>影響度</th><th>対策</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>pygbag でフォントファイルが読めない</td>
+        <td>高</td>
+        <td>Base64 埋め込み方式のフォールバックを用意する</td>
+      </tr>
+      <tr>
+        <td>日本語フォントが大きくて読み込みが遅い</td>
+        <td>中</td>
+        <td>サブセット化した軽量フォントを用意する</td>
+      </tr>
+      <tr>
+        <td>ブラウザでのキー入力が奪われる</td>
+        <td>中</td>
+        <td>Space / Arrow / Enter はブラウザショートカットと競合するため、canvas フォーカス管理を確認</td>
+      </tr>
+      <tr>
+        <td>サウンドが再生されない</td>
+        <td>低</td>
+        <td>サウンドは必須ではないので無効化でも動作する設計にする</td>
+      </tr>
+      <tr>
+        <td>Pygame の text_width が日本語でずれる</td>
+        <td>中</td>
+        <td>PixelMplus は等幅前提なので、半角・全角の混在を考慮した幅計算を確認</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">07</span> チェックリスト</h2>
+
+  <ul class="checklist">
+    <li>Pygame 版スケルトンの作成</li>
+    <li>Pyxel 色番号 → RGB 変換テーブル作成</li>
+    <li>btn/btnp 互換入力クラスの実装</li>
+    <li>フォト読み込み・text_width 互換の実装</li>
+    <li>描画系（cls / rect / rectb / text）の移植</li>
+    <li>テキスト折り返し・ページ分割の動作確認</li>
+    <li>タイピング演出（文字送り・サウンド）の移植</li>
+    <li>全キー・マウス・パッド入力の動作確認</li>
+    <li>メインループの async 化</li>
+    <li>アセット同梱・プリロードの設定</li>
+    <li>pygbag ビルドとブラウザ実行確認</li>
+    <li>GitHub Pages へのデプロイ</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="num">08</span> 推奨ディレクトリ構成</h2>
+  <pre>aozora-reader/
+├── main.py              # エントリーポイント（pygbag 対応）
+├── reader.py            # App クラス（Pygame 版ロジック）
+├── input_manager.py     # btn/btnp 互換クラス
+├── palette.py           # Pyxel 色番号 → RGB 変換
+├── sound_generator.py   # ビープ音生成
+├── assets/
+│   ├── PixelMplus10-Regular.ttf
+│   ├── PixelMplus12-Regular.ttf
+│   └── aozora_416.txt
+└── build_web.sh         # pygbag ビルド用スクリプト</pre>
+</section>
+
+</main>
+
+</body>
+</html>
