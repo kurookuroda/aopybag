@@ -9,7 +9,9 @@ set -e
 
 echo "=== pygbag ビルド開始 ==="
 #pygbag --assets "$ASSETS" main.py
+
 python3 -m pygbag .
+python3 -m http.server 8000 --directory build/web/
 
 echo "=== ビルド完了 ==="
 echo "出力先: build/web/"
